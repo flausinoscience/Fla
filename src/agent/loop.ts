@@ -30,8 +30,11 @@ const runAgent: RunAgentFn = function ({
       const message = response.message;
       messages.push(message);
 
-      if (message.content) {
-        yield { type: "assistant_message", content: message.content };
+      if (message.content || message.reasoning) {
+        const reasoning = message.reasoning;
+        yield reasoning !== undefined
+          ? { type: "assistant_message", content: message.content, reasoning }
+          : { type: "assistant_message", content: message.content };
       }
 
       if (!message.toolCalls || message.toolCalls.length === 0) {

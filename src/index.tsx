@@ -2,7 +2,8 @@
 
 import { render } from "ink";
 import AgentBanner from "./ui/Banner.js";
-import { App } from "./ui/App.js";
+import App from "./ui/App.js";
+import { createToolRegistry } from "./agent/toolRegistry.js";
 
 const asciiArt = `
 ┏┓┓        ┓•
@@ -10,15 +11,24 @@ const asciiArt = `
 ┻ ┗┗┻  ┗┗┛┗┻┗┛┗┗┫  ┗┻┗┫┗ ┛┗┗
                 ┛     ┛     `;
 
+const registry = createToolRegistry({ workspaceRoot: process.cwd() });
+const systemPrompt = "...";
+
 const bannerInstance = render(
   <AgentBanner
     asciiArt={asciiArt}
-    model="gemma (mock)"
-    projectFolder="~/projects/demo"
+    model="not yet wired"
+    projectFolder={process.cwd()}
     gitBranch="main"
     contextMaxTokens={8192}
   />,
 );
 bannerInstance.unmount();
 
-render(<App />);
+render(
+  <App
+    provider={/* ollamaAdapter still stubbed */}
+    registry={registry}
+    systemPrompt={systemPrompt}
+  />,
+);

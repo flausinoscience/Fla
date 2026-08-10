@@ -3,12 +3,14 @@ import { Box, Text, useInput } from "ink";
 
 type InputProps = {
   onSubmit: (userPrompt: string) => Promise<void>;
+  disabled?: boolean;
 };
 
-export default function PromptBar({ onSubmit }: InputProps) {
+export default function PromptBar({ onSubmit, disabled = false }: InputProps) {
   const [prompt, setPrompt] = useState("");
 
   useInput((input, key) => {
+    if (disabled) return;
     if (key.return) {
       if (prompt.trim().length > 0) {
         onSubmit(prompt).catch((e) => console.error(e));
@@ -27,9 +29,9 @@ export default function PromptBar({ onSubmit }: InputProps) {
 
   return (
     <Box borderStyle="single" borderColor="gray" paddingX={1}>
-      <Text>&gt; </Text>
-      <Text>{prompt}</Text>
-      <Text color="gray">█</Text>
+      <Text dimColor={disabled}>&gt; </Text>
+      <Text dimColor={disabled}>{prompt}</Text>
+      {!disabled && <Text color="gray">█</Text>}
     </Box>
   );
 }

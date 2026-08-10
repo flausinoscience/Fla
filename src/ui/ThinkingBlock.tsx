@@ -1,19 +1,14 @@
+import React from "react";
 import { Box, Text } from "ink";
 import type { ThinkingEvent } from "./types.js";
 
-type ThinkingBlockProps = {
-  event: ThinkingEvent;
-  expanded: boolean;
-};
+type Props = { event: ThinkingEvent; expanded: boolean };
 
-export default function ThinkingBlock({ event, expanded }: ThinkingBlockProps) {
-  if (!expanded) {
-    return <Text dimColor>▸ Thinking (press t to expand)</Text>;
-  }
-
+export default function ThinkingBlock({ event, expanded }: Props) {
+  if (!expanded) return <Text dimColor>▸ thinking (press t to expand)</Text>;
   return (
     <Box flexDirection="column">
-      <Text dimColor>▾ Thinking</Text>
+      <Text dimColor>▾ thinking</Text>
       <Text dimColor>{event.text}</Text>
     </Box>
   );
