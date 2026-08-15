@@ -13,10 +13,6 @@ export type Message =
       role: "assistant";
       content: string;
       toolCalls?: ToolCall[];
-
-      // optional: maps from providers that expose a
-      // separate "thinking" channel (e.g. Ollama+Gemma).
-      // providers without it simply omit, consumers must degrade gracefully.
       reasoning?: string;
     }
   | { role: "tool"; toolCallId: string; toolName: string; content: ToolResult };
@@ -32,7 +28,7 @@ export type ChatRequest = {
   tools: ToolSchemaForProvider[];
 };
 
-type AssistantMessage = Extract<Message, { role: "assistant" }>;
+export type AssistantMessage = Extract<Message, { role: "assistant" }>;
 
 export type ChatResponse = {
   message: AssistantMessage;
