@@ -1,4 +1,4 @@
-import type { ChatResponse, Message } from "./provider.js";
+import type { AssistantMessage, Message } from "./provider.js";
 import { getToolSchemas } from "./toolRegistry.js";
 import type { AgentEvent, AgentHandle, RunAgentFn } from "./types.js";
 
@@ -23,11 +23,21 @@ const runAgent: RunAgentFn = function ({
 
   async function* startLoop(): AsyncGenerator<AgentEvent> {
     for (let turn = 0; turn < maxIterations; turn++) {
-      const response: ChatResponse = await provider.chat({
-        messages,
-        tools: getToolSchemas(registry),
-      });
-      const message = response.message;
+      let message: AssistantMessage | undefined;
+
+      for await (const chunk of provider.chat({ messages, tools: getToolSchemas(registry) })) {
+        if (chunk.type === "delta") {
+          yield { type: "assistant_delta", channel: chunk.channel, textSoFar: chunk.textSoFar };
+        } else {
+          message = chunk.message;
+        }
+      }
+
+      if (!message) {
+        yield { type: "error", message: "Provider stream ended without a final message." };
+        return;
+      }
+
       messages.push(message);
 
       if (message.content || message.reasoning) {

@@ -2,6 +2,7 @@ import type { Message, Provider } from "./provider.js";
 import type { ToolRegistry, ToolResult } from "./tools/types.js";
 
 export type AgentEvent =
+  | { type: "assistant_delta"; channel: "reasoning" | "content"; textSoFar: string }
   | { type: "assistant_message"; content: string; reasoning?: string }
   | { type: "tool_call_requested"; toolCallId: string; toolName: string; arguments: unknown }
   | { type: "tool_call_result"; toolCallId: string; toolName: string; result: ToolResult }

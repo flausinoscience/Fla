@@ -27,8 +27,18 @@ const TERMINAL_STATUSES: ReadonlySet<ToolCallEvent["status"]> = new Set([
 export function reducer(state: UIState, action: UIAction): UIState {
   switch (action.kind) {
     case "push_event": {
-      const committed = state.pending ? [...state.committed, state.pending] : state.committed;
-      return { ...state, committed, pending: action.event, thinkingExpanded: false };
+      const incoming = action.event;
+      const existing = state.pending;
+      const isSameEvent = existing?.id === incoming.id;
+
+      const committed = existing && !isSameEvent ? [...state.committed, existing] : state.committed;
+
+      return {
+        ...state,
+        committed,
+        pending: incoming,
+        thinkingExpanded: isSameEvent ? state.thinkingExpanded : false,
+      };
     }
 
     case "upsert_tool_call": {

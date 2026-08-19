@@ -9,6 +9,12 @@ function nextId(prefix: string): string {
   return `${prefix}-${counter}`;
 }
 
+// Tracks which UI event id this turn's streaming reasoning/content is
+// currently updating. Reset once the turn finalizes (assistant_message) or
+// aborts (error) — module-level is fine, only one run is ever active.
+let reasoningStreamId: string | null = null;
+let contentStreamId: string | null = null;
+
 function summarizeResult(result: ToolResult): string {
   switch (result.status) {
     case "ok":
@@ -28,20 +34,44 @@ function statusFromResult(result: ToolResult): ToolCallEvent["status"] {
 
 export function toUIActions(event: AgentEvent): UIAction[] {
   switch (event.type) {
+    case "assistant_delta": {
+      if (event.channel === "reasoning") {
+        reasoningStreamId ??= nextId("thinking");
+        return [
+          {
+            kind: "push_event",
+            event: { id: reasoningStreamId, type: "thinking", text: event.textSoFar },
+          },
+        ];
+      }
+      contentStreamId ??= nextId("assistant");
+      return [
+        {
+          kind: "push_event",
+          event: { id: contentStreamId, type: "assistant_message", text: event.textSoFar },
+        },
+      ];
+    }
+
     case "assistant_message": {
+      // Already streamed live via assistant_delta in the normal case — this
+      // just marks the turn finalized. Only push fresh events as a fallback
+      // if nothing actually streamed.
       const actions: UIAction[] = [];
-      if (event.reasoning) {
+      if (!reasoningStreamId && event.reasoning) {
         actions.push({
           kind: "push_event",
           event: { id: nextId("thinking"), type: "thinking", text: event.reasoning },
         });
       }
-      if (event.content) {
+      if (!contentStreamId && event.content) {
         actions.push({
           kind: "push_event",
           event: { id: nextId("assistant"), type: "assistant_message", text: event.content },
         });
       }
+      reasoningStreamId = null;
+      contentStreamId = null;
       return actions;
     }
 
@@ -74,7 +104,7 @@ export function toUIActions(event: AgentEvent): UIAction[] {
       ];
 
     case "approval_resolved":
-      return []; // tool_call_result supersedes this almost immediately — nothing to render
+      return [];
 
     case "tool_call_result":
       return [
@@ -103,6 +133,12 @@ export function toUIActions(event: AgentEvent): UIAction[] {
       ];
 
     case "error":
+      // Also reset stream tracking here — my new "stream ended without a
+      // final message" guard in loop.ts can fire mid-turn, after deltas
+      // already claimed these ids. Without this reset, the next run would
+      // wrongly merge fresh output into this aborted turn's stale ids.
+      reasoningStreamId = null;
+      contentStreamId = null;
       return [
         {
           kind: "push_event",
@@ -111,6 +147,6 @@ export function toUIActions(event: AgentEvent): UIAction[] {
       ];
 
     case "done":
-      return [{ kind: "flush_pending" }]; // finalAnswer already arrived as its own assistant_message
+      return [{ kind: "flush_pending" }];
   }
 }

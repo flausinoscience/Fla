@@ -30,10 +30,10 @@ export type ChatRequest = {
 
 export type AssistantMessage = Extract<Message, { role: "assistant" }>;
 
-export type ChatResponse = {
-  message: AssistantMessage;
-};
+export type ChatChunk =
+  | { type: "delta"; channel: "reasoning" | "content"; textSoFar: string }
+  | { type: "final"; message: AssistantMessage };
 
 export interface Provider {
-  chat(request: ChatRequest): Promise<ChatResponse>;
+  chat(request: ChatRequest): AsyncGenerator<ChatChunk>;
 }
