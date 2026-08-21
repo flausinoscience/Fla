@@ -4,6 +4,7 @@ import { Box, Static, useInput } from "ink";
 import EventRenderer from "./EventRenderer.js";
 import PromptBar from "./PromptBar.js";
 import ApprovalPrompt from "./ApprovalPrompt.js";
+import Spinner from "./Spinner.js";
 import { reducer, initialState } from "./reducer.js";
 import { toUIActions } from "./agentEventBridge.js";
 import runAgent from "../agent/loop.js";
@@ -62,6 +63,7 @@ export default function App({ provider, registry, systemPrompt }: AppProps) {
 
   const awaitingApproval =
     state.pending?.type === "tool_call" && state.pending.status === "awaitingApproval";
+  const showSpinner = isRunning && !awaitingApproval;
 
   return (
     <Box flexDirection="column">
@@ -71,6 +73,8 @@ export default function App({ provider, registry, systemPrompt }: AppProps) {
 
       <Box flexDirection="column">
         {state.pending && <EventRenderer event={state.pending} expanded={state.thinkingExpanded} />}
+
+        {showSpinner && <Spinner />}
 
         {awaitingApproval && state.pending?.type === "tool_call" ? (
           <ApprovalPrompt event={state.pending} onAnswer={handleAnswer} />
