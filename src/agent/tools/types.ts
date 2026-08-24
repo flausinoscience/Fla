@@ -19,8 +19,13 @@ export type Tool<Arg = Record<string, unknown>> = {
   description: string;
   schema: ToolSchema<Arg>;
   execute: (arg: Arg) => Promise<ToolResult>;
+  requiresApproval: boolean;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AnyTool = Tool<any>;
 export type ToolRegistry = Map<string, AnyTool>;
+
+export type ToolRegistryParams = {
+  workspaceRoot: string;
+};

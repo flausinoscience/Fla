@@ -1,14 +1,8 @@
 import { Text } from "ink";
 import type { MessageEvent } from "./types.js";
+import MarkdownView from "./MarkdownView.js";
 
-type MessageBlockProps = {
-  event: MessageEvent;
-};
-
-export default function MessageBlock({ event }: MessageBlockProps) {
-  if (event.type === "user") {
-    return <Text color="green">&gt; {event.text}</Text>;
-  }
-
-  return <Text>{event.text}</Text>;
+export default function MessageBlock({ event }: { event: MessageEvent }) {
+  if (event.type === "user_message") return <Text color="green">&gt; {event.text}</Text>;
+  return <MarkdownView source={event.text} />;
 }

@@ -65,6 +65,7 @@ function createReadFileTool(sandbox: Sandbox): Tool<ReadFileArgs> {
     description: DESCRIPTION,
     schema,
     execute: createExecute(sandbox),
+    requiresApproval: false,
   };
 }
 

@@ -1,52 +1,68 @@
-import type { TranscriptEvent } from "./types.js";
+import type { ToolCallEvent, TranscriptEvent } from "./types.js";
 
 export type UIState = {
   committed: TranscriptEvent[];
-  currentEvent: TranscriptEvent | null;
-  thinkingExpanded: boolean; // only for current event
+  pending: TranscriptEvent | null;
+  thinkingExpanded: boolean;
 };
 
 export type UIAction =
-  | { kind: "pushEvent"; event: TranscriptEvent }
-  | { kind: "commitCurrentEvent" }
-  | { kind: "toggleThinking" };
+  | { kind: "push_event"; event: TranscriptEvent }
+  | { kind: "upsert_tool_call"; event: ToolCallEvent }
+  | { kind: "flush_pending" }
+  | { kind: "toggle_thinking" };
 
 export const initialState: UIState = {
   committed: [],
-  currentEvent: null,
+  pending: null,
   thinkingExpanded: false,
 };
 
-export function reducer(currentState: UIState, action: UIAction): UIState {
-  const newState = { ...currentState };
+const TERMINAL_STATUSES: ReadonlySet<ToolCallEvent["status"]> = new Set([
+  "success",
+  "error",
+  "rejected",
+]);
 
+export function reducer(state: UIState, action: UIAction): UIState {
   switch (action.kind) {
-    case "pushEvent": {
-      if (currentState.currentEvent) {
-        newState.committed = [...currentState.committed, currentState.currentEvent];
+    case "push_event": {
+      const incoming = action.event;
+      const existing = state.pending;
+      const isSameEvent = existing?.id === incoming.id;
+
+      const committed = existing && !isSameEvent ? [...state.committed, existing] : state.committed;
+
+      return {
+        ...state,
+        committed,
+        pending: incoming,
+        thinkingExpanded: isSameEvent ? state.thinkingExpanded : false,
+      };
+    }
+
+    case "upsert_tool_call": {
+      const incoming = action.event;
+      const existing = state.pending;
+      const sameCall = existing?.type === "tool_call" && existing.id === incoming.id;
+
+      const priorCommitted =
+        existing && !sameCall ? [...state.committed, existing] : state.committed;
+
+      const merged: ToolCallEvent = sameCall ? { ...existing, ...incoming } : incoming;
+
+      if (TERMINAL_STATUSES.has(merged.status)) {
+        return { ...state, committed: [...priorCommitted, merged], pending: null };
       }
-
-      newState.currentEvent = action.event;
-      newState.thinkingExpanded = false;
-
-      return newState;
+      return { ...state, committed: priorCommitted, pending: merged };
     }
 
-    case "commitCurrentEvent": {
-      if (!currentState.currentEvent) {
-        return currentState;
-      }
-
-      newState.committed = [...currentState.committed, currentState.currentEvent];
-      newState.currentEvent = null;
-
-      return newState;
+    case "flush_pending": {
+      if (!state.pending) return state;
+      return { ...state, committed: [...state.committed, state.pending], pending: null };
     }
 
-    case "toggleThinking": {
-      newState.thinkingExpanded = !currentState.thinkingExpanded;
-
-      return newState;
-    }
+    case "toggle_thinking":
+      return { ...state, thinkingExpanded: !state.thinkingExpanded };
   }
 }
