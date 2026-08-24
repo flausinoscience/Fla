@@ -1,5 +1,7 @@
 import type { Sandbox } from "./sandbox.js";
+import createReadDirectoryTool from "./tools/readDirectory.js";
 import createReadFileTool from "./tools/readFile.js";
+import createWriteFileTool from "./tools/writeFile.js";
 import createSandbox from "./sandbox.js";
 import type { AnyTool, ToolRegistry, ToolRegistryParams } from "./tools/types.js";
 import type { ToolSchemaForProvider } from "./provider.js";
@@ -7,7 +9,11 @@ import type { ToolSchemaForProvider } from "./provider.js";
 export function createToolRegistry({ workspaceRoot }: ToolRegistryParams): ToolRegistry {
   const sandbox: Sandbox = createSandbox(workspaceRoot);
 
-  const tools: AnyTool[] = [createReadFileTool(sandbox)];
+  const tools: AnyTool[] = [
+    createReadFileTool(sandbox),
+    createReadDirectoryTool(sandbox),
+    createWriteFileTool(sandbox),
+  ];
 
   return new Map(tools.map((tool) => [tool.name, tool]));
 }
